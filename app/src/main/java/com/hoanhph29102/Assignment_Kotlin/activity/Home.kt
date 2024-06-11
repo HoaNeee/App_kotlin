@@ -146,7 +146,7 @@ fun HeaderHome1(modifier: Modifier,text : String, navController: NavController){
 }
 
 @Composable
-fun HeaderWithBack(modifier: Modifier,text : String, navController: NavController) {
+fun HeaderWithBack(modifier: Modifier,text : String, navController: NavController, onBackClick: () -> Unit) {
     Box(modifier = modifier
         .fillMaxWidth()
         .height(50.dp),
@@ -158,7 +158,7 @@ fun HeaderWithBack(modifier: Modifier,text : String, navController: NavControlle
                 .padding(start = 10.dp)
                 .align(alignment = Alignment.CenterStart)
                 .clickable {
-                    navController.popBackStack()
+                    onBackClick()
                 }
 
         )

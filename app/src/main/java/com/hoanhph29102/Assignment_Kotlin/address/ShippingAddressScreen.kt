@@ -29,7 +29,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -44,6 +46,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.hoanhph29102.Assignment_Kotlin.ProgressDialog
 import com.hoanhph29102.Assignment_Kotlin.activity.HeaderWithBack
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
@@ -55,19 +58,24 @@ fun ShippingAddressScreen(navController: NavController) {
     val defaultUsername = currentUser?.displayName ?: ""
     val coroutineScope = rememberCoroutineScope()
     val viewModel : ShippingAddressViewModel = viewModel()
-//    LaunchedEffect(Unit){
-//        viewModel.loadAddresses()
-//    }
+
+    val isLoading by viewModel.isLoading.observeAsState(false)
+
+    LaunchedEffect(Unit){
+        viewModel.loadAddresses()
+    }
 
     Scaffold(
         topBar = {
-            HeaderWithBack(modifier = Modifier, text = "Address", navController = navController)
+            HeaderWithBack(modifier = Modifier, text = "Address", navController = navController, onBackClick = {
+                navController.popBackStack()
+            })
         },
         content = {paddingValues ->
             Box(modifier = Modifier.padding(paddingValues),
                 ) {
                 if (viewModel.addressList.isEmpty()) {
-                    Text(text = "Loading addresses...", modifier = Modifier.padding(16.dp))
+                    Text(text = "Please add a new address...", modifier = Modifier.padding(16.dp), style = MaterialTheme.typography.titleMedium)
                 } else {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
@@ -85,6 +93,9 @@ fun ShippingAddressScreen(navController: NavController) {
                                 })
                         }
                     }
+                }
+                if (isLoading){
+                    ProgressDialog()
                 }
             }
             
@@ -115,7 +126,7 @@ fun CardShippingAddress(address: Address, nameUser: String, onDefaultChange: (Bo
                 .height(120.dp)
                 .padding(12.dp)
                 .clickable {
-                           onClickDetail()
+                    onClickDetail()
                 }
             ,
             shape = RoundedCornerShape(12.dp),

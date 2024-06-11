@@ -63,12 +63,13 @@ import com.hoanhph29102.Assignment_Kotlin.favorite.FavoriteScreen
 import com.hoanhph29102.Assignment_Kotlin.order.checkout.CheckoutScreen
 import com.hoanhph29102.Assignment_Kotlin.order.order.OrderDetailScreen
 import com.hoanhph29102.Assignment_Kotlin.paymentMethod.AddPaymentScreen
+import com.hoanhph29102.Assignment_Kotlin.paymentMethod.EditPaymentMethod
+import com.hoanhph29102.Assignment_Kotlin.paymentMethod.PaymentMethod
 import com.hoanhph29102.Assignment_Kotlin.paymentMethod.PaymentMethodScreen
 import com.hoanhph29102.Assignment_Kotlin.profile.User
 import com.hoanhph29102.Assignment_Kotlin.ui.theme.Assignment_KotlinTheme
 import com.hoanhph29102.assignment_kotlin.R
-import com.hoanhph29102.assignment_kotlin.order.OrderSuccessScreen
-//import com.hoanhph29102.assignment_kotlin.order.OrderSuccessScreen
+
 
 
 import kotlinx.coroutines.launch
@@ -289,16 +290,6 @@ fun NavigationGraph(navController: NavHostController, context: Context) {
         composable(BottomNavItem.Favorite.route) { FavoriteScreen(navController) }
         composable(BottomNavItem.Order.route) { OrderScreen(navController) }
         composable(BottomNavItem.Profile.route) { ProfileScreen(navController) }
-
-//        composable(
-//            "productDetail/{productJson}",
-//            arguments = listOf(navArgument("productJson") { type = NavType.StringType  })
-//        ) { backStackEntry ->
-//            val productJson = backStackEntry.arguments?.getString("productJson")
-//            val product = Gson().fromJson(productJson, Product::class.java)
-//            ProductDetailScreen(product,navController)
-//        }
-
         composable(
             "productDetail/{productId}",
             arguments = listOf(navArgument("productId") { type = NavType.StringType  })
@@ -324,6 +315,17 @@ fun NavigationGraph(navController: NavHostController, context: Context) {
             }
         }
         composable("paymentMethod"){ PaymentMethodScreen(navController = navController)}
+        composable("paymentDetail/{paymentId}"){navBackStackEntry ->
+            val paymentId = navBackStackEntry.arguments?.getString("paymentId")
+            val payment = runBlocking {
+                getPaymentById(paymentId)
+            }
+            if (payment != null){
+                EditPaymentMethod(paymentMethod = payment, navController = navController)
+            }else{
+                Text(text = "Payment not found")
+            }
+        }
         composable("addPaymentMethod"){ AddPaymentScreen(navController) }
         composable("submitSuccess"){ OrderSuccessScreen(navController = navController) }
         composable(
@@ -384,6 +386,22 @@ private suspend fun getAddressById(addressId: String?): Address? {
     if (document.exists()) {
         val user = document.toObject(User::class.java)
         return user?.addresses?.find { it.idAddress == addressId }
+    }
+
+    return null
+}
+private suspend fun getPaymentById(paymentId: String?): PaymentMethod? {
+    if (paymentId.isNullOrEmpty()) return null
+
+    val auth = FirebaseAuth.getInstance()
+    val userId = auth.currentUser?.uid ?: return null
+
+    val firestore = FirebaseFirestore.getInstance()
+    val document = firestore.collection("user").document(userId).get().await()
+
+    if (document.exists()) {
+        val user = document.toObject(User::class.java)
+        return user?.paymentMethods?.find { it.idMethod == paymentId }
     }
 
     return null

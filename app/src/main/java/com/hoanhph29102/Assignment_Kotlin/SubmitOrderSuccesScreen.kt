@@ -1,4 +1,4 @@
-package com.hoanhph29102.assignment_kotlin.order
+package com.hoanhph29102.Assignment_Kotlin
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement

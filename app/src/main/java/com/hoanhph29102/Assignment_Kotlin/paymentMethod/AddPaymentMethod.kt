@@ -64,7 +64,9 @@ fun AddPaymentScreen(navController: NavController) {
 
     Scaffold(
         topBar = {
-                 HeaderWithBack(modifier = Modifier, text = "Add Payment", navController = navController)
+                 HeaderWithBack(modifier = Modifier, text = "Add Payment", navController = navController, onBackClick = {
+                    navController.popBackStack()
+                 })
         },
         bottomBar = {
             Box(modifier = Modifier
@@ -120,7 +122,7 @@ fun addPaymentMethod(paymentMethod: PaymentMethod, navController: NavController)
                     user.paymentMethods = updatedPayment
                     firestore.collection("user").document(userId).set(user)
                         .addOnSuccessListener {
-                            navController.navigate("paymentMethod")
+                            navController.popBackStack()
                         }
                         .addOnFailureListener { e ->
                             Log.e("Payment add", "addAddress: $e", )

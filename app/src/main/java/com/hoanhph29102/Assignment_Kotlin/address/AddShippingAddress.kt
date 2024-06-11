@@ -55,7 +55,9 @@ fun AddShippingAddressScreen(navController: NavController) {
 
     Scaffold(
         topBar = {
-                 HeaderWithBack(modifier = Modifier, text = "Shipping Address", navController = navController)
+                 HeaderWithBack(modifier = Modifier, text = "Shipping Address", navController = navController, onBackClick = {
+                    navController.popBackStack()
+                 })
         },
         bottomBar = {
             ButtonSplash(modifier = Modifier, text = "Save Address") {
@@ -102,18 +104,17 @@ fun addAddress(address: Address, navController: NavController) {
                     user.addresses = updatedAddressList
                     firestore.collection("user").document(userId).set(user)
                         .addOnSuccessListener {
-                            navController.navigate("shippingAddress")
+                            //navController.navigate("shippingAddress")
+                            navController.popBackStack()
                         }
                         .addOnFailureListener { e ->
                             Log.e("Address add", "addAddress: $e", )
                         }
                 } else {
-                    // Xử lý khi không thể chuyển đổi tài liệu thành đối tượng User
+
                     Log.e("Address add", "addAddress: không thể chuyển đổi tài liệu thành đối tượng User", )
                 }
             } else {
-
-                // Xử lý khi tài liệu không tồn tại
                 Log.e("Address add", "addAddress: tài liệu không tồn tại", )
             }
         }

@@ -92,10 +92,15 @@ fun CartScreen(navController: NavController) {
 
     Scaffold(
         topBar = {
-                 HeaderWithBack(modifier = Modifier, text = "Cart", navController = navController)
+                 HeaderWithBack(modifier = Modifier, text = "Cart", navController = navController, onBackClick = {
+                    navController.popBackStack()
+                 })
         },
         content = {paddingValues ->
             Box(modifier = Modifier.padding(paddingValues)) {
+                if (cartProducts.isNullOrEmpty() || cartProducts.size <= 0){
+                    Text(text = "The shopping cart is currently empty!", modifier = Modifier.padding(12.dp), style = MaterialTheme.typography.titleMedium)
+                }
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(7.dp)) {
                     items(cartProducts){cart ->
                         ItemCart(cart = cart,
@@ -123,7 +128,7 @@ fun CartScreen(navController: NavController) {
                     .padding(horizontal = 12.dp),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text(text = "Total: ")
+                    Text(text = "Total: ", color = Color.Gray)
 
                     Text(text = "$ $totalCartPrice")
                 }

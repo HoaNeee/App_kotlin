@@ -30,6 +30,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -42,6 +43,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.hoanhph29102.Assignment_Kotlin.ProgressDialog
 import com.hoanhph29102.Assignment_Kotlin.activity.ButtonSplash
 import com.hoanhph29102.Assignment_Kotlin.activity.HeaderWithBack
 import com.hoanhph29102.Assignment_Kotlin.address.Address
@@ -65,6 +67,9 @@ fun CheckoutScreen(navController: NavController, totalMoney: Double) {
     val orderViewModel: OrderViewModel = viewModel(factory = OrderViewModelFactory(OrderService.getInstance()))
 
     var showDialog by remember { mutableStateOf(false) }
+
+    val isLoadingData by checkOutViewModel.isLoading.observeAsState(false)
+
     //orderViewModel.fetDefaultUser()
 
     LaunchedEffect(Unit){
@@ -74,7 +79,9 @@ fun CheckoutScreen(navController: NavController, totalMoney: Double) {
     Box(modifier = Modifier.background(color = Color.Transparent)){
         Scaffold(
             topBar = {
-                HeaderWithBack(modifier = Modifier, text = "Check Out", navController = navController)
+                HeaderWithBack(modifier = Modifier, text = "Check Out", navController = navController, onBackClick = {
+                    navController.popBackStack()
+                })
             },
             bottomBar = {
                 ButtonSplash(modifier = Modifier
@@ -98,6 +105,9 @@ fun CheckoutScreen(navController: NavController, totalMoney: Double) {
                     }
                     TotalCheckout(totalAmount = totalAmount)
 
+                }
+                if (isLoadingData){
+                    ProgressDialog()
                 }
             }
         }

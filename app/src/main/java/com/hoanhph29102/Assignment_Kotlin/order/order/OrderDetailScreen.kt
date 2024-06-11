@@ -37,7 +37,9 @@ fun OrderDetailScreen(orderId: String, navController: NavController) {
     orderViewModel.getDetailOrder(orderId)
     Scaffold(
         topBar = {
-            HeaderWithBack(modifier = Modifier, text = "Order Detail", navController = navController)
+            HeaderWithBack(modifier = Modifier, text = "Order Detail", navController = navController, onBackClick = {
+                navController.popBackStack()
+            })
         }
     ) {paddingValues ->
         Box(modifier = Modifier.padding(paddingValues)){

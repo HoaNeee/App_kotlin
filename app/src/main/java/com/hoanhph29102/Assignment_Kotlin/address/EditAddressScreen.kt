@@ -56,7 +56,9 @@ fun EditAddressScreen(address: Address,navController: NavController) {
 
     Scaffold(
         topBar = {
-            HeaderWithBack(modifier = Modifier, text = "Shipping Address", navController = navController)
+            HeaderWithBack(modifier = Modifier, text = "Shipping Address", navController = navController, onBackClick = {
+                navController.popBackStack()
+            })
         },
         bottomBar = {
             Row(
@@ -64,7 +66,7 @@ fun EditAddressScreen(address: Address,navController: NavController) {
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                ButtonSplash(modifier = Modifier.weight(1f), text = "Edit") {
+                ButtonSplash(modifier = Modifier.padding(horizontal = 8.dp).weight(1f), text = "Edit") {
                     val editedAddress = Address(
                         idAddress = address.idAddress,
                         address = addressState.text,
@@ -74,7 +76,7 @@ fun EditAddressScreen(address: Address,navController: NavController) {
                     )
                     editAddress(editedAddress, navController)
                 }
-                ButtonSplash(modifier = Modifier.weight(1f), text = "Delete") {
+                ButtonSplash(modifier = Modifier.padding(horizontal = 8.dp).weight(1f), text = "Delete") {
                     deleteAddress(address, navController)
                 }
             }
@@ -224,7 +226,8 @@ fun editAddress(address: Address, navController: NavController) {
                     user.addresses = updatedAddresses
                     firestore.collection("user").document(userId).set(user)
                         .addOnSuccessListener {
-                            navController.navigate("shippingAddress")
+                            //navController.navigate("shippingAddress")
+                            navController.popBackStack()
                         }
                         .addOnFailureListener { e ->
                             Log.e("Edit Address", "editAddress: $e")
@@ -253,7 +256,8 @@ fun deleteAddress(address: Address, navController: NavController) {
                     user.addresses = updatedAddresses
                     firestore.collection("user").document(userId).set(user)
                         .addOnSuccessListener {
-                            navController.navigate("shippingAddress")
+                            //navController.navigate("shippingAddress")
+                            navController.popBackStack()
                         }
                         .addOnFailureListener { e ->
                             Log.e("Delete Address", "deleteAddress: $e")

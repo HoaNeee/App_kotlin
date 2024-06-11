@@ -2,6 +2,7 @@ package com.hoanhph29102.Assignment_Kotlin.paymentMethod
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -29,7 +30,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -45,6 +48,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.google.firebase.auth.FirebaseAuth
+import com.hoanhph29102.Assignment_Kotlin.ProgressDialog
 import com.hoanhph29102.Assignment_Kotlin.activity.HeaderWithBack
 import com.hoanhph29102.assignment_kotlin.R
 import kotlinx.coroutines.launch
@@ -57,9 +61,16 @@ fun PaymentMethodScreen(navController: NavController) {
     val coroutineScope = rememberCoroutineScope()
     val viewModel: PaymentMethodViewModel = viewModel()
 
+    val isLoading by viewModel.isLoading.observeAsState(false)
+
+    LaunchedEffect(Unit){
+        viewModel.loadPaymentMethods()
+    }
     Scaffold(
         topBar = {
-                 HeaderWithBack(modifier = Modifier, text = "Payment", navController = navController)
+                 HeaderWithBack(modifier = Modifier, text = "Payment", navController = navController, onBackClick = {
+                     navController.popBackStack()
+                 })
         },
         bottomBar = {},
         floatingActionButton = {
@@ -75,7 +86,7 @@ fun PaymentMethodScreen(navController: NavController) {
     ) {paddingValues ->
         Box(modifier = Modifier.padding(paddingValues)){
             if (viewModel.paymentMethodList.isEmpty()) {
-                Text(text = "Loading payment methods...", modifier = Modifier.padding(16.dp))
+                Text(text = "Please add a new payment method...", modifier = Modifier.padding(16.dp), style = MaterialTheme.typography.titleMedium)
             } else {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
@@ -88,16 +99,24 @@ fun PaymentMethodScreen(navController: NavController) {
                                     viewModel.updateDefaultPaymentMethod(method, isChecked)
                                 }
 
-                            })
+                            },
+
+                                onClickDetail = {
+                                    navController.navigate("paymentDetail/${method.idMethod}")
+                                }
+                            )
                         }
                     }
                 }
+            if (isLoading){
+                ProgressDialog()
+            }
             }
         }
     }
 
 @Composable
-fun CardPaymentMethod(method: PaymentMethod, nameUser: String, onDefaultChange: (Boolean) -> Unit) {
+fun CardPaymentMethod(method: PaymentMethod, nameUser: String, onDefaultChange: (Boolean) -> Unit, onClickDetail: () -> Unit) {
     var isDefault by remember { mutableStateOf(method.isDefault) }
     Column(modifier = Modifier) {
         Card(
@@ -105,6 +124,9 @@ fun CardPaymentMethod(method: PaymentMethod, nameUser: String, onDefaultChange: 
                 .fillMaxWidth()
                 .height(200.dp)
                 .padding(12.dp)
+                .clickable {
+                           onClickDetail()
+                }
             ,
             shape = RoundedCornerShape(12.dp),
             elevation = CardDefaults.cardElevation(4.dp),
