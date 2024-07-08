@@ -13,6 +13,12 @@ interface ProductService {
     @GET("productDetail/{productId}")
     suspend fun getProductDetails(@Path("productId") productId: String): Product
 
+    @GET("/category")
+    suspend fun getCategories(): List<Category>
+
+    @GET("/filter-products/{categoryId}")
+    suspend fun getProductByCategory(@Path("categoryId") categoryId: String): List<Product>
+
     companion object {
         private var retrofitService: ProductService? = null
         fun getInstance(): ProductService {

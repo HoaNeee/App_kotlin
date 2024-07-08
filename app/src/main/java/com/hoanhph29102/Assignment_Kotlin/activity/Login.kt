@@ -147,6 +147,7 @@ fun LoginScreen(navController: NavController, context: Context){
                             } else {
                                 errorMessage = task.exception?.message
                                 showDialog = true
+                                showDialogProgress = false
                             }
                         }
                 },

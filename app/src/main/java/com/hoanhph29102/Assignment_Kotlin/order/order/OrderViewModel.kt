@@ -1,6 +1,8 @@
 package com.hoanhph29102.Assignment_Kotlin.order.order
 
 import android.util.Log
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -32,6 +34,18 @@ class OrderViewModel(private val orderService: OrderService) : ViewModel(){
     private val _orderDetail = MutableStateFlow<Order?>(null)
     val orderDetail: StateFlow<Order?> = _orderDetail
 
+    private val _isLoading = MutableLiveData(false)
+    val isLoading : LiveData<Boolean> = _isLoading
+
+    private val _isSuccess = MutableLiveData(false)
+    val isSuccess : LiveData<Boolean> = _isSuccess
+
+    private val _orderStatus = MutableLiveData<String>()
+    val orderStatus: LiveData<String> get() = _orderStatus
+
+    private val _orderId = MutableLiveData<String?>()
+    val orderId: LiveData<String?> get() = _orderId
+
     fun fetDefaultUser(){
         val currentUser = auth.currentUser
         currentUser?.let { user ->
@@ -53,12 +67,15 @@ class OrderViewModel(private val orderService: OrderService) : ViewModel(){
     fun fetchOrder(userId: String){
         viewModelScope.launch {
             try {
+                _isLoading.value = true
                 val orders = withContext(Dispatchers.IO){
                     orderService.getOrder(userId)
                 }
                 _oderProduct.value = orders
             }catch (e: Exception){
                 Log.e("TAG", "fetchOrder: $e", )
+            }finally {
+                _isLoading.value = false
             }
         }
     }
@@ -66,6 +83,7 @@ class OrderViewModel(private val orderService: OrderService) : ViewModel(){
     fun createOrder(userId: String, name: String, address: String, payment: String){
         viewModelScope.launch {
             try {
+                _isLoading.value = true
                 val orderRequest = OrderRequest(
                     nameUser = name,
                     addressUser = address,
@@ -74,10 +92,17 @@ class OrderViewModel(private val orderService: OrderService) : ViewModel(){
 
                 val order = withContext(Dispatchers.IO) {
                     orderService.createOrder(userId, orderRequest)
+
                 }
+                _isSuccess.value = true
                 _oderProduct.value = _oderProduct.value + order
+                _orderId.value = order.OrderID.toString()
+
             } catch (e: Exception) {
                 Log.e("OrderViewModel", "createOrder: $e")
+                _isSuccess.value = false
+            }finally {
+                _isLoading.value = false
             }
         }
     }

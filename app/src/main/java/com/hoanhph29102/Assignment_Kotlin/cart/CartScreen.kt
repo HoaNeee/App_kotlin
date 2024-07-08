@@ -33,6 +33,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -56,7 +59,13 @@ import coil.compose.AsyncImage
 import com.google.firebase.auth.FirebaseAuth
 import com.hoanhph29102.Assignment_Kotlin.ProgressDialog
 import com.hoanhph29102.Assignment_Kotlin.activity.ButtonSplash
+import com.hoanhph29102.Assignment_Kotlin.activity.DialogNotify
 import com.hoanhph29102.Assignment_Kotlin.activity.HeaderWithBack
+import com.hoanhph29102.Assignment_Kotlin.favorite.CustomSnackbar
+import com.hoanhph29102.Assignment_Kotlin.notify.NotificationViewModel
+import com.hoanhph29102.Assignment_Kotlin.notify.NotificationViewModelFactory
+import com.hoanhph29102.Assignment_Kotlin.notify.NotifyService
+import com.hoanhph29102.Assignment_Kotlin.order.checkout.DialogConfirm
 import com.hoanhph29102.Assignment_Kotlin.product.Product
 import com.hoanhph29102.Assignment_Kotlin.product.QuantityProduct
 import com.hoanhph29102.Assignment_Kotlin.product.navigateToProductDetail
@@ -74,6 +83,23 @@ fun CartScreen(navController: NavController) {
     )
     val cartProducts by cartViewModel.cartProducts.collectAsState()
     val totalCartPrice by cartViewModel.totalCartPrice.observeAsState(0.0)
+
+    val notifyService = NotifyService.getInstance()
+    val notifyViewModel: NotificationViewModel = viewModel(
+        factory = NotificationViewModelFactory(notifyService)
+    )
+    val snackbarHostState = remember { SnackbarHostState() }
+    val snackBarMes by notifyViewModel.snackbarMessage.observeAsState()
+
+
+    var showDialog by remember { mutableStateOf(false) }
+    var currentCatrToDel by remember {
+        mutableStateOf<Cart?>(null)
+    }
+    var showDialogNotify by remember {
+        mutableStateOf(false)
+    }
+
     val user = FirebaseAuth.getInstance().currentUser
     val userId = user?.uid
 
@@ -91,15 +117,24 @@ fun CartScreen(navController: NavController) {
     }
 
     Scaffold(
+        snackbarHost = {
+            SnackbarHost(hostState = snackbarHostState)
+        },
         topBar = {
                  HeaderWithBack(modifier = Modifier, text = "Cart", navController = navController, onBackClick = {
                     navController.popBackStack()
                  })
         },
         content = {paddingValues ->
-            Box(modifier = Modifier.padding(paddingValues)) {
+            Box(modifier = Modifier
+                .padding(paddingValues)
+                .fillMaxSize()) {
                 if (cartProducts.isNullOrEmpty() || cartProducts.size <= 0){
-                    Text(text = "The shopping cart is currently empty!", modifier = Modifier.padding(12.dp), style = MaterialTheme.typography.titleMedium)
+                    Text(text = "The shopping cart is currently empty!", modifier = Modifier
+                        .padding(12.dp)
+                        .align(
+                            Alignment.Center
+                        ), style = MaterialTheme.typography.titleMedium)
                 }
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(7.dp)) {
                     items(cartProducts){cart ->
@@ -110,11 +145,22 @@ fun CartScreen(navController: NavController) {
 
                         },
                             navController = navController,
+                            onDelete = {
+                                showDialog = true
+                                currentCatrToDel = cart
+
+                            }
                         )
                     }
                 }
                 if (isLoading){
                     ProgressDialog()
+                }
+                if (showDialogNotify){
+                    DialogNotify(
+                        onConfirmation = { showDialogNotify = false},
+                        dialogTitle = "Oops!",
+                        dialogMessage = "Hãy thêm một vài sản phẩm vào giỏ hàng nào!")
                 }
             }
         },
@@ -138,12 +184,43 @@ fun CartScreen(navController: NavController) {
                     .padding(8.dp),
                     text = "Check out",
                     onclick = {
-                        navController.navigate("checkout_screen/${totalCartPrice}")
+                        if (cartProducts.isNullOrEmpty()){
+                            showDialogNotify = true
+                        }else{
+                            navController.navigate("checkout_screen/${totalCartPrice}")
+                        }
+
                     }
                     )
             }
         }
     )
+    DialogConfirm(showDialog = showDialog,
+        title = "Thông báo",
+        text = "Bạn có chắc muốn xóa mục này không?",
+        onDismiss = {
+            showDialog = false
+            currentCatrToDel = null
+        },
+        onConfirm = {
+            currentCatrToDel?.let {cart ->
+                cartViewModel.deleteCartItem(cart._id,cart.userId)
+                notifyViewModel.showSnackbar("Mục giỏ hàng đã được xóa!")
+            }
+        }
+    )
+
+    snackBarMes?.let {
+        CustomSnackbar(
+            snackbarHostState = snackbarHostState,
+            message = it,
+            actionLabel = "Đóng",
+            duration = SnackbarDuration.Short,
+            onDismiss = {
+                notifyViewModel.clearSnackbarMessage()
+            }
+        )
+    }
 }
 
 @Composable
@@ -151,6 +228,7 @@ fun ItemCart(
     cart: Cart,
     onQuantityUpdate: (newQuantity: Int) -> Unit ,
     navController: NavController,
+    onDelete: () -> Unit
 ) {
     val quantityState = remember {
         mutableStateOf(cart.quantity)
@@ -238,9 +316,9 @@ fun ItemCart(
             }
 
             Icon(Icons.Default.Close,
-                contentDescription = "",
+                contentDescription = "delete cart item",
                 modifier = Modifier.clickable {
-                    cartViewModel.deleteCartItem(cart._id,cart.userId)
+                    onDelete()
                 }
                 )
 

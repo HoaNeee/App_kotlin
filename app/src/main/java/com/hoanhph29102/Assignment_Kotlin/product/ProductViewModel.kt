@@ -20,8 +20,21 @@ class ProductViewModel : ViewModel() {
     private val _productDetails = MutableStateFlow<Product?>(null)
     val productDetails: StateFlow<Product?> = _productDetails
 
+    private val _categories = MutableStateFlow<List<Category>>(emptyList())
+    val categories: StateFlow<List<Category>> = _categories
+
+    private val _selectedCategoryIndex = MutableStateFlow(-1)
+    val selectedCategoryIndex: StateFlow<Int> = _selectedCategoryIndex
+
+    private val _filteredProducts = MutableStateFlow<List<Product>>(emptyList())
+    val filteredProducts: StateFlow<List<Product>> = _filteredProducts
+
+    private val _isLoading = MutableLiveData(false)
+    val isLoading : LiveData<Boolean> = _isLoading
+
     init {
         fetchProducts()
+        fetchCategories()
     }
 
     private fun fetchProducts() {
@@ -31,8 +44,22 @@ class ProductViewModel : ViewModel() {
                     productService.getProducts()
                 }
                 _products.value = productList
+                _filteredProducts.value = productList
             } catch (e: Exception) {
                 Log.e("ProductViewModel", "Error fetching products: ${e.message}", e)
+            }
+        }
+    }
+
+    private fun fetchCategories(){
+        viewModelScope.launch {
+            try {
+                val categoryList = withContext(Dispatchers.IO) {
+                    productService.getCategories()
+                }
+                _categories.value = categoryList
+            } catch (e: Exception) {
+                Log.e("ProductViewModel", "Error fetching categories: ${e.message}", e)
             }
         }
     }
@@ -48,6 +75,41 @@ class ProductViewModel : ViewModel() {
                 Log.e("ProductViewModel", "Error fetching product details: ${e.message}", e)
             }
         }
+    }
+
+    fun selectCategory(index: Int) {
+        //_selectedCategoryIndex.value = index
+
+        viewModelScope.launch {
+            try {
+                _isLoading.value = true
+                if (_selectedCategoryIndex.value == index){
+                    _selectedCategoryIndex.value = -1
+                    _filteredProducts.value = _products.value
+                }
+                else {
+                    _selectedCategoryIndex.value = index
+                    if (index >= 0 && index < _categories.value.size) {
+                        val selectedCategoryId = _categories.value[index]._id
+                        val filteredProductList = withContext(Dispatchers.IO) {
+                            productService.getProductByCategory(selectedCategoryId)
+                        }
+                        _filteredProducts.value = filteredProductList
+                    } else {
+                        _filteredProducts.value = _products.value
+                    }
+                }
+            }catch (e: Exception){
+                Log.e("TAG", "selectCategory error: $e", )
+            }finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    fun clearSelectedCategory() {
+        _selectedCategoryIndex.value = -1
+        _filteredProducts.value = _products.value
     }
 
 }

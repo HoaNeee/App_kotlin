@@ -121,7 +121,7 @@ fun RegisterScreen(navController: NavController){
                                                 navController.navigate("login")
                                             }
                                                 .addOnFailureListener{ e ->
-                                                    errorMessage = "Đã có lỗi xảy ra, vui lòng thử lại sau ít phút!"
+                                                    errorMessage = "Đã có lỗi xảy ra, vui lòng thử lại sau ít phút! $e"
                                                     showDialog = true
                                                 }
                                         }

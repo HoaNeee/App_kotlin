@@ -27,6 +27,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -43,6 +44,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
+import com.hoanhph29102.Assignment_Kotlin.ProgressDialog
 import com.hoanhph29102.assignment_kotlin.R
 
 
@@ -51,8 +53,22 @@ fun ProductScreen(navController: NavController) {
 
     val productViewModel: ProductViewModel = viewModel()
     val products by productViewModel.products.collectAsState()
-    ListMenuChip()
-    ListProduct(products = products, navController = navController)
+
+    val filteredProducts by productViewModel.filteredProducts.collectAsState()
+
+    val categories by productViewModel.categories.collectAsState()
+    val selectedCategoryIndex by productViewModel.selectedCategoryIndex.collectAsState()
+
+    val isLoading by productViewModel.isLoading.observeAsState(false)
+
+    ListMenuChip(categories,selectedCategoryIndex){index ->
+        productViewModel.selectCategory(index)
+
+    }
+    ListProduct(products = filteredProducts, navController = navController)
+    if (isLoading){
+        ProgressDialog()
+    }
 }
 
 @Composable
@@ -145,17 +161,18 @@ fun ItemChipFilter(icon: Int, text: String,isSelected: Boolean, onClick: () -> U
 }
 
 @Composable
-fun ListMenuChip() {
-    val listMenuChip = fakeMenuChip()
-    val listMenuChip1 = listOf(
-        Category(icon = R.drawable.stars, text = "Popular"),
-        Category(icon = R.drawable.chair, text = "Chair"),
-        Category(icon = R.drawable.table, text = "Table"),
-        Category(icon = R.drawable.armchair, text = "Armchair"),
-        Category(icon = R.drawable.bed, text = "Bed"),
-        Category(icon = R.drawable.lamp, text = "Lamp"),
-    )
-    var selectedChipIndex by remember { mutableStateOf(-1) }
+fun ListMenuChip(categories: List<Category>, selectedChipIndex: Int, onChipSelected: (Int) -> Unit) {
+    //val listMenuChip = fakeMenuChip()
+//    val listMenuChip1 = listOf(
+//        Category(icon = R.drawable.stars, nameCategory = "Popular"),
+//        Category(icon = R.drawable.chair, nameCategory = "Chair"),
+//        Category(icon = R.drawable.table, nameCategory = "Table"),
+//        Category(icon = R.drawable.armchair, nameCategory = "Armchair"),
+//        Category(icon = R.drawable.bed, nameCategory = "Bed"),
+//        Category(icon = R.drawable.lamp, nameCategory = "Lamp"),
+//    )
+    //var selectedChipIndex by remember { mutableStateOf(-1) }
+
     LazyRow(
         modifier = Modifier
             .fillMaxWidth()
@@ -163,27 +180,28 @@ fun ListMenuChip() {
         horizontalArrangement = Arrangement.spacedBy(24.dp),
         contentPadding = PaddingValues(4.dp)
     ){
-        items(listMenuChip1) {item ->
-            val index = listMenuChip1.indexOf(item)
-            ItemChipFilter(icon = item.icon,
-                text = item.text,
-                isSelected = selectedChipIndex == index,
-                onClick = {
-                    if (selectedChipIndex == index) {
-                        selectedChipIndex = -1
-                    } else {
-                        selectedChipIndex = index
-                    }
-
-                }
-            )
+        items(categories) {item ->
+            //val index = item.indexOf(item)
+            ItemChipFilter(
+                icon = getIconResourceId(item.nameCategory),
+                text = item.nameCategory,
+                isSelected = categories.indexOf(item) == selectedChipIndex,
+                onClick = {onChipSelected(categories.indexOf(item))}
+                )
         }
 
     }
 }
 
-fun fakeMenuChip() : List<Category> {
-    return List(10) { index ->
-        Category(icon = R.drawable.icon_cart, text = "Item $index")
+fun getIconResourceId(iconName: String): Int {
+    return when (iconName) {
+        "star" -> R.drawable.stars
+        "chair" -> R.drawable.chair
+        "table" -> R.drawable.table
+        "armchair" -> R.drawable.armchair
+        "bed" -> R.drawable.bed
+        "lamp" -> R.drawable.lamp
+        else -> R.drawable.stars
     }
 }
+

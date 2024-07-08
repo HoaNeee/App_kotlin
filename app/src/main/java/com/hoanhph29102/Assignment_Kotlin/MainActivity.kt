@@ -1,9 +1,11 @@
 package com.hoanhph29102.Assignment_Kotlin
 
 import android.content.Context
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -37,6 +39,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import androidx.core.app.ActivityCompat
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -60,6 +63,8 @@ import com.hoanhph29102.Assignment_Kotlin.order.order.OrderScreen
 import com.hoanhph29102.Assignment_Kotlin.product.ProductDetailScreen
 import com.hoanhph29102.Assignment_Kotlin.profile.ProfileScreen
 import com.hoanhph29102.Assignment_Kotlin.favorite.FavoriteScreen
+import com.hoanhph29102.Assignment_Kotlin.notify.NotifyScreen
+import com.hoanhph29102.Assignment_Kotlin.notify.createNotificationChannel
 import com.hoanhph29102.Assignment_Kotlin.order.checkout.CheckoutScreen
 import com.hoanhph29102.Assignment_Kotlin.order.order.OrderDetailScreen
 import com.hoanhph29102.Assignment_Kotlin.paymentMethod.AddPaymentScreen
@@ -77,6 +82,16 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.tasks.await
 
 class MainActivity : ComponentActivity() {
+
+    private val requestPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted: Boolean ->
+            if (isGranted) {
+                // Quyền đã được cấp
+            } else {
+                // Quyền bị từ chối
+            }
+        }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -99,8 +114,13 @@ class MainActivity : ComponentActivity() {
             }
 
         }
+        createNotificationChannel(this)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            requestPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+        }
     }
 }
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -113,7 +133,7 @@ fun MainApp() {
     val titleTopAppBar = when (currentRoute) {
         BottomNavItem.Home.route -> "Home"
         BottomNavItem.Favorite.route -> "Favorite"
-        BottomNavItem.Order.route -> "Order"
+        BottomNavItem.Notify.route -> "Notify"
         BottomNavItem.Profile.route -> "Profile"
         "otherScreen" -> "Other Screen"
         else -> "My App"
@@ -143,7 +163,7 @@ fun MainApp() {
 sealed class BottomNavItem(val title: String, val icon: Int, val route: String) {
     object Home : BottomNavItem("Home", R.drawable.home, "home")
     object Favorite : BottomNavItem("Favorite", R.drawable.bookmark, "favorite")
-    object Order : BottomNavItem("Order", R.drawable.order, "order")
+    object Notify : BottomNavItem("Notify", R.drawable.notify, "notify")
     object Profile : BottomNavItem("Profile", R.drawable.user, "profile")
 }
 
@@ -152,7 +172,7 @@ fun BottomNavigationBar(navController: NavHostController) {
     val items = listOf(
         BottomNavItem.Home,
         BottomNavItem.Favorite,
-        BottomNavItem.Order,
+        BottomNavItem.Notify,
         BottomNavItem.Profile
     )
 //    NavigationBar(
@@ -264,7 +284,7 @@ fun shouldShowTopBar(currentRoute: String?): Boolean {
     return when (currentRoute) {
         BottomNavItem.Home.route,
         BottomNavItem.Favorite.route,
-        BottomNavItem.Order.route,
+        BottomNavItem.Notify.route,
 //        BottomNavItem.Profile.route,
         "otherScreen" -> true
         else -> false
@@ -275,7 +295,7 @@ fun shouldShowBottomBar(currentRoute: String?): Boolean {
     return when (currentRoute) {
         BottomNavItem.Home.route,
         BottomNavItem.Favorite.route,
-        BottomNavItem.Order.route,
+        BottomNavItem.Notify.route,
         BottomNavItem.Profile.route -> true
         else -> false
     }
@@ -288,7 +308,7 @@ fun NavigationGraph(navController: NavHostController, context: Context) {
         composable("login"){ LoginScreen(navController, context) }
         composable(BottomNavItem.Home.route) { HomeScreen(navController) }
         composable(BottomNavItem.Favorite.route) { FavoriteScreen(navController) }
-        composable(BottomNavItem.Order.route) { OrderScreen(navController) }
+        composable(BottomNavItem.Notify.route) { NotifyScreen(navController) }
         composable(BottomNavItem.Profile.route) { ProfileScreen(navController) }
         composable(
             "productDetail/{productId}",
@@ -346,6 +366,14 @@ fun NavigationGraph(navController: NavHostController, context: Context) {
                 }
 
         }
+        composable("order?fromSuccesOrder={fromSuccesOrder}",
+            arguments = listOf(navArgument("fromSuccesOrder"){
+                type = NavType.BoolType
+                defaultValue = false
+            })
+        ){ backStackEntry ->
+            val fromSuccesOrder = backStackEntry.arguments?.getBoolean("fromSuccesOrder") ?: false
+            OrderScreen(navController = navController,fromSuccesOrder)}
 
 
     }

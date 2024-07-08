@@ -1,6 +1,7 @@
 package com.hoanhph29102.Assignment_Kotlin.profile
 
 import android.util.Log
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -62,7 +63,9 @@ fun ProfileScreen(navController: NavController) {
     val userState = remember {
         mutableStateOf(User())
     }
-
+    BackHandler(onBack = {
+        navController.navigate("home")
+    })
     var showDialog by remember {
         mutableStateOf(false)
     }
@@ -103,7 +106,7 @@ fun ProfileScreen(navController: NavController) {
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 modifier = Modifier.padding(8.dp)
             ) {
-                CardOptionProfile(optionText = "My Orders", onClick = {navController.navigate("order")})
+                CardOptionProfile(optionText = "My Orders", onClick = {navController.navigate("order?fromSuccesOrder=false")})
                 CardOptionProfile(optionText = "Shipping Address",onClick = {navController.navigate("shippingAddress")})
                 CardOptionProfile(optionText = "Payment Method",onClick = {navController.navigate("paymentMethod")})
 

@@ -9,6 +9,7 @@ data class Product(
     val reviews: Int,
     val description: String,
     val image: String,
+    val categoryId: String,
 )
 
 

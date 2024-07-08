@@ -2,6 +2,9 @@ package com.hoanhph29102.Assignment_Kotlin.activity
 
 import android.net.Uri
 import android.util.Log
+import androidx.activity.OnBackPressedCallback
+import androidx.activity.compose.BackHandler
+import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -31,9 +34,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -41,6 +46,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -50,6 +56,8 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.google.gson.Gson
+import com.hoanhph29102.Assignment_Kotlin.MainActivity
+import com.hoanhph29102.Assignment_Kotlin.order.checkout.DialogConfirm
 import com.hoanhph29102.Assignment_Kotlin.product.Category
 import com.hoanhph29102.Assignment_Kotlin.product.ListMenuChip
 import com.hoanhph29102.Assignment_Kotlin.product.ListProduct
@@ -72,6 +80,14 @@ fun HomeScreen(navController: NavController){
 //        image = "https://atinproduction.com/wp-content/uploads/2021/07/AWP01220-scaled-1280x1920.jpg"
 //    )
 
+    var showDialog by remember {
+        mutableStateOf(false)
+    }
+
+    BackHandler(onBack = {
+        showDialog = true
+    })
+
     Scaffold(
         content = {
             paddingValues ->
@@ -80,6 +96,17 @@ fun HomeScreen(navController: NavController){
                     ProductScreen(navController = navController)
                 }
             }
+        }
+    )
+    val context = LocalContext.current
+    DialogConfirm(
+        showDialog = showDialog,
+        title = "Thông Báo",
+        text = "Bạn có chắc muốn thoát không?",
+        onDismiss = { showDialog = false},
+        onConfirm = {
+            //navController.navigate("splash")
+            (context as? MainActivity)?.finish()
         }
     )
 }

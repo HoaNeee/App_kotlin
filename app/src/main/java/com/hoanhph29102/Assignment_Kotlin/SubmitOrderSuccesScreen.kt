@@ -49,10 +49,12 @@ fun OrderSuccessScreen(navController: NavController) {
         ButtonSplash(modifier = Modifier
             .width(315.dp)
             .height(60.dp), text = "Track your orders") {
-            navController.navigate("order")
+            navController.navigate("order?fromSuccesOrder=true")
         }
         OutlinedButton(onClick = {
-                                 navController.navigate("home")
+                                 navController.navigate("home"){
+
+                                 }
         },
             modifier = Modifier
                 .width(315.dp)

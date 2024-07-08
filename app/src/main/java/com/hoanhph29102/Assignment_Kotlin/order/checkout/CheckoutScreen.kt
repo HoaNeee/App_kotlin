@@ -1,5 +1,7 @@
 package com.hoanhph29102.Assignment_Kotlin.order.checkout
 
+import android.content.Context
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -24,6 +26,9 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -37,16 +42,26 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.hoanhph29102.Assignment_Kotlin.ProgressDialog
 import com.hoanhph29102.Assignment_Kotlin.activity.ButtonSplash
+import com.hoanhph29102.Assignment_Kotlin.activity.DialogNotify
 import com.hoanhph29102.Assignment_Kotlin.activity.HeaderWithBack
 import com.hoanhph29102.Assignment_Kotlin.address.Address
+import com.hoanhph29102.Assignment_Kotlin.favorite.CustomSnackbar
+import com.hoanhph29102.Assignment_Kotlin.notify.Notification
+import com.hoanhph29102.Assignment_Kotlin.notify.NotificationViewModel
+import com.hoanhph29102.Assignment_Kotlin.notify.NotificationViewModelFactory
+import com.hoanhph29102.Assignment_Kotlin.notify.NotifyService
+import com.hoanhph29102.Assignment_Kotlin.notify.showOrderNotification
 import com.hoanhph29102.Assignment_Kotlin.order.order.OrderService
 import com.hoanhph29102.Assignment_Kotlin.order.order.OrderViewModel
 import com.hoanhph29102.Assignment_Kotlin.order.order.OrderViewModelFactory
@@ -65,12 +80,29 @@ fun CheckoutScreen(navController: NavController, totalMoney: Double) {
     val totalAmount by checkOutViewModel.totalMoney.collectAsState()
 
     val orderViewModel: OrderViewModel = viewModel(factory = OrderViewModelFactory(OrderService.getInstance()))
+    val orderId by orderViewModel.orderId.observeAsState()
+
+
+    val notifyService = NotifyService.getInstance()
+    val notifyViewModel: NotificationViewModel = viewModel(
+        factory = NotificationViewModelFactory(notifyService)
+    )
+    val snackbarHostState = remember { SnackbarHostState() }
+    val snackBarMes by notifyViewModel.snackbarMessage.observeAsState()
+
+    val notifications by notifyViewModel.notifications.observeAsState(emptyList())
 
     var showDialog by remember { mutableStateOf(false) }
+    var showDialogNotify by remember {
+        mutableStateOf(false)
+    }
 
     val isLoadingData by checkOutViewModel.isLoading.observeAsState(false)
-
+    val isLoadingOrder by orderViewModel.isLoading.observeAsState(false)
+    val isSuccess by orderViewModel.isSuccess.observeAsState(false)
     //orderViewModel.fetDefaultUser()
+
+    val context = LocalContext.current
 
     LaunchedEffect(Unit){
         checkOutViewModel.fetchUserDetail()
@@ -78,6 +110,9 @@ fun CheckoutScreen(navController: NavController, totalMoney: Double) {
 
     Box(modifier = Modifier.background(color = Color.Transparent)){
         Scaffold(
+            snackbarHost = {
+                SnackbarHost(hostState = snackbarHostState)
+            },
             topBar = {
                 HeaderWithBack(modifier = Modifier, text = "Check Out", navController = navController, onBackClick = {
                     navController.popBackStack()
@@ -106,8 +141,26 @@ fun CheckoutScreen(navController: NavController, totalMoney: Double) {
                     TotalCheckout(totalAmount = totalAmount)
 
                 }
-                if (isLoadingData){
+                if (isLoadingData || isLoadingOrder){
                     ProgressDialog()
+                }
+                if (showDialogNotify){
+                    DialogNotify(
+                        onConfirmation = { showDialogNotify = false },
+                        dialogTitle = "Oops!",
+                        dialogMessage = "Bạn chưa chọn địa chỉ giao hàng hoặc phương thức thanh toán kìa!")
+                }
+                LaunchedEffect(orderId) {
+                    orderId?.let { id ->
+                        user?.let { currentUser ->
+                            notifyViewModel.sendNotification(currentUser.uid, "Đơn hàng được tạo thành công", "Bạn vừa tạo thành công đơn hàng có mã Order No$id")
+                            navController.navigate("submitSuccess") {
+                                popUpTo("home") { inclusive = false }
+                            }
+                            showOrderNotification(context,id)
+                            orderViewModel.clearCart(currentUser.uid)
+                        }
+                    }
                 }
             }
         }
@@ -130,12 +183,32 @@ fun CheckoutScreen(navController: NavController, totalMoney: Double) {
                         address = defaultAddress.address,
                         payment = defaultPayment.cardNumber
                     )
-                    navController.navigate("submitSuccess")
+
+                    //Log.d("CheckoutScreen", "Notifications: ${notificationViewModel.notifications.value}")
+//                    navController.navigate("submitSuccess"){
+//                        popUpTo("home"){inclusive = false}
+//                    }
+
+                } else {
+                    showDialogNotify = true
                 }
-                orderViewModel.clearCart(currentUser.uid)
+
+                //orderViewModel.clearCart(currentUser.uid)
+                //notifyViewModel.sendNotification(currentUser.uid,"Đơn hàng được tạo thành công", "Bạn vừa tạo thành công đơn hàng có mã ")
             }
         }
         )
+    snackBarMes?.let {
+        CustomSnackbar(
+            snackbarHostState = snackbarHostState,
+            message = it,
+            actionLabel = "Đóng",
+            duration = SnackbarDuration.Short,
+            onDismiss = {
+                notifyViewModel.clearSnackbarMessage()
+            }
+        )
+    }
 }
 
 @Composable
@@ -148,8 +221,8 @@ fun ShippingAddressCheckout(defaultAddress: Address?,user: User,navController: N
         TitleItemCheckout(text = "Shopping Address",
             onIconClick = {
             navController.navigate("shippingAddress"){
-                launchSingleTop = true  // đảm bảo rằng chỉ một instance của điểm đến được đưa vào back stack
-                restoreState = true     // khôi phục lại trạng thái của điểm đến khi quay lại
+                launchSingleTop = true
+                restoreState = true
             }
         })
         Card(
@@ -322,6 +395,8 @@ fun DialogConfirm(
         )
     }
 }
+
+
 //@Preview(showBackground = true)
 //@Composable
 //fun PreviewCheckoutTest() {

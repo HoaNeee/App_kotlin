@@ -1,5 +1,6 @@
 package com.hoanhph29102.Assignment_Kotlin.product
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -27,11 +28,15 @@ import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -51,9 +56,14 @@ import com.google.firebase.auth.FirebaseAuth
 import com.hoanhph29102.Assignment_Kotlin.cart.CartService
 import com.hoanhph29102.Assignment_Kotlin.cart.CartViewModel
 import com.hoanhph29102.Assignment_Kotlin.cart.CartViewModelFactory
+import com.hoanhph29102.Assignment_Kotlin.favorite.CustomSnackbar
 import com.hoanhph29102.Assignment_Kotlin.favorite.FavoriteService
 import com.hoanhph29102.Assignment_Kotlin.favorite.FavoriteViewModel
 import com.hoanhph29102.Assignment_Kotlin.favorite.FavoriteViewModelFactory
+import com.hoanhph29102.Assignment_Kotlin.notify.Notification
+import com.hoanhph29102.Assignment_Kotlin.notify.NotificationViewModel
+import com.hoanhph29102.Assignment_Kotlin.notify.NotificationViewModelFactory
+import com.hoanhph29102.Assignment_Kotlin.notify.NotifyService
 
 @Composable
 fun ProductDetailScreen(productId: String, navController: NavController) {
@@ -79,6 +89,14 @@ fun ProductDetailScreen(productId: String, navController: NavController) {
         factory = CartViewModelFactory(cartService)
     )
     val cartProducts by cartViewModel.cartProducts.collectAsState()
+
+    //snackbar
+    val notifyService = NotifyService.getInstance()
+    val notifyViewModel: NotificationViewModel = viewModel(
+        factory = NotificationViewModelFactory(notifyService)
+    )
+    val snackbarHostState = remember { SnackbarHostState() }
+    val snackBarMes by notifyViewModel.snackbarMessage.observeAsState()
 
 
     LaunchedEffect(userId) {
@@ -135,8 +153,24 @@ fun ProductDetailScreen(productId: String, navController: NavController) {
                 productId = productId,
                 userId = userId?:"",
                 isFavorite = isFavorite,
-                quantity = productQuantityState.value
+                quantity = productQuantityState.value,
+                onAddToCartClick = {notifyViewModel.showSnackbar("Đã thêm vào giỏ hàng!")}
             )
+
+
+        snackBarMes?.let {
+            CustomSnackbar(
+                snackbarHostState = snackbarHostState,
+                message = it,
+                actionLabel = "Đóng",
+                duration = SnackbarDuration.Short,
+                onDismiss = {
+                    notifyViewModel.clearSnackbarMessage()
+                }
+            )
+        }
+
+        SnackbarHost(hostState = snackbarHostState, modifier = Modifier.align(Alignment.BottomCenter))
         }
 
 }
@@ -220,7 +254,7 @@ fun BodyProductDetail(
     quantity: Int,
     onMinus: () -> Unit,
     onPlus: () -> Unit) {
-
+    //Log.e("TAG", "BodyProductDetail: ${product.categoryId}", )
     Spacer(modifier = Modifier.height(15.dp))
     Column(modifier = Modifier.fillMaxWidth()){
         Text(text = product.name,
@@ -259,7 +293,8 @@ fun FooterProductDetail(
     userId: String?,
     productId: String,
     isFavorite: Boolean,
-    quantity: Int
+    quantity: Int,
+    onAddToCartClick: () -> Unit
     ) {
 
     val favoriteService = FavoriteService.getInstance()
@@ -299,7 +334,11 @@ fun FooterProductDetail(
         Spacer(modifier = Modifier.width(20.dp))
         Button(
             onClick = {
-                      userId?.let { cartViewModel.addToCart(it,productId, quantity = quantity) }
+                      userId?.let {
+                            cartViewModel.addToCart(it,productId, quantity = quantity)
+
+                      }
+                onAddToCartClick()
             },
             modifier = Modifier
                 .fillMaxHeight()

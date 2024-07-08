@@ -35,6 +35,7 @@ fun OrderDetailScreen(orderId: String, navController: NavController) {
     val orders by orderViewModel.orderDetail.collectAsState()
 
     orderViewModel.getDetailOrder(orderId)
+
     Scaffold(
         topBar = {
             HeaderWithBack(modifier = Modifier, text = "Order Detail", navController = navController, onBackClick = {
